@@ -1,72 +1,49 @@
 package main
 
 import (
-	"math"
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 )
 
-type HasilPerhitungan struct {
-	Bentuk   string  `json:"bentuk"`
-	JariJari float64 `json:"jari_jari,omitempty"`
-	Sisi     float64 `json:"sisi,omitempty"`
-	Luas     float64 `json:"luas"`
-	Keliling float64 `json:"keliling"`
+type RequestData struct {
+	JariJariLingkaran float64 `json:"jari_jari_lingkaran"`
+	SisiPersegi       int     `json:"sisi_persegi"`
+	AlasSegitiga      int     `json:"alas_segitiga"`
+	TinggiSegitiga    int     `json:"tinggi_segitiga"`
 }
 
-func hitungLuas(bentuk string, jariJari float64, sisi float64) float64 {
-	switch bentuk {
-	case "lingkaran":
-		return math.Pi * math.Pow(jariJari, 2)
-	case "segitiga":
-		return (sisi * sisi) / 2
-	case "persegi":
-		return sisi * sisi
-	default:
-		return 0
-	}
-}
-
-func hitungKeliling(bentuk string, jariJari float64, sisi float64) float64 {
-	switch bentuk {
-	case "lingkaran":
-		return 2 * math.Pi * jariJari
-	case "segitiga":
-		return 3 * sisi
-	case "persegi":
-		return 4 * sisi
-	default:
-		return 0
-	}
-}
-
-func hitungHandler(c *fiber.Ctx) error {
-	bentuk := c.FormValue("bentuk")
-	jariJari, _ := strconv.ParseFloat(c.FormValue("jari_jari"), 64)
-	sisi, _ := strconv.ParseFloat(c.FormValue("sisi"), 64)
-
-	luas := hitungLuas(bentuk, jariJari, sisi)
-	keliling := hitungKeliling(bentuk, jariJari, sisi)
-
-	hasil := HasilPerhitungan{
-		Bentuk:   bentuk,
-		JariJari: jariJari,
-		Sisi:     sisi,
-		Luas:     luas,
-		Keliling: keliling,
-	}
-
-	return c.JSON(hasil)
+type ResponseData struct {
+	LuasLingkaran     float64 `json:"luas_lingkaran"`
+	LuasPersegi       int     `json:"luas_persegi"`
+	LuasSegitiga      float64 `json:"luas_segitiga"`
+	KelilingLingkaran float64 `json:"keliling_lingkaran"`
+	KelilingPersegi   int     `json:"keliling_persegi"`
+	KelilingSegitiga  int     `json:"keliling_segitiga"`
 }
 
 func main() {
 	app := fiber.New()
 
-	app.Post("/hitung", hitungHandler)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!")
+	})
 
-	err := app.Listen(":8080")
-	if err != nil {
-		panic(err)
-	}
+	app.Post("/calculate", func(c *fiber.Ctx) error {
+		request := new(RequestData)
+
+		if err := c.BodyParser(request); err != nil {
+			return err
+		}
+
+		response := new(ResponseData)
+		response.LuasLingkaran = 3.14 * request.JariJariLingkaran * request.JariJariLingkaran
+		response.LuasPersegi = request.SisiPersegi * request.SisiPersegi
+		response.LuasSegitiga = 0.5 * float64(request.AlasSegitiga) * float64(request.TinggiSegitiga)
+		response.KelilingLingkaran = 2 * 3.14 * request.JariJariLingkaran
+		response.KelilingPersegi = 4 * request.SisiPersegi
+		response.KelilingSegitiga = 3 * request.AlasSegitiga
+
+		return c.JSON(response)
+	})
+
+	app.Listen(":2000")
 }
